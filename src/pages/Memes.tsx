@@ -1,21 +1,25 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFetch } from '../hooks/useFetch';
 import { useCart } from '../context/CartContext';
-import { enrichMeme, CATEGORIES } from '../utils/memeUtils';
+import { enrichMeme, CATEGORIES, Meme } from '../utils/memeUtils';
 import { Link } from 'react-router-dom';
 
+interface ApiResponse {
+  success: boolean;
+  data: {
+    memes: Meme[];
+  };
+}
+
 export const Memes = () => {
-  // 1. Načtení dat z API
-  const { data, loading, error } = useFetch('https://api.imgflip.com/get_memes');
+  const { data, loading, error } = useFetch<ApiResponse>('https://api.imgflip.com/get_memes');
   const { addItem } = useCart();
 
-  // 2. Stavy pro filtry
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [sort, setSort] = useState('name'); // name, rating, size
+  const [sort, setSort] = useState('name'); 
 
-  // 3. Debounce efekt pro vyhledávání (čeká 300ms než začne hledat)
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
@@ -23,45 +27,37 @@ export const Memes = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // 4. Logika filtrování a řazení
   const processedMemes = useMemo(() => {
     if (!data) return [];
     
-    // Obohatíme data o naše fiktivní ceny a kategorie
     let memes = data.data.memes.map(enrichMeme);
 
-    // A. Filtr podle kategorie
     if (category !== 'All') {
       memes = memes.filter(m => m.category === category);
     }
 
-    // B. Filtr podle vyhledávání
     if (debouncedSearch) {
       memes = memes.filter(m => m.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
     }
 
-    // C. Řazení
     memes.sort((a, b) => {
       if (sort === 'name') return a.name.localeCompare(b.name);
-      if (sort === 'rating') return b.rating - a.rating; // Sestupně
-      if (sort === 'size') return (b.width * b.height) - (a.width * a.height); // Sestupně
+      if (sort === 'rating') return (b.rating || 0) - (a.rating || 0);
+      if (sort === 'size') return (b.width * b.height) - (a.width * a.height);
       return 0;
     });
 
     return memes;
   }, [data, category, debouncedSearch, sort]);
 
-  // 5. Zobrazení chyby
   if (error) return <div className="text-red-500 text-center text-xl mt-10">Nepodařilo se načíst memy 😢</div>;
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">Meme Marketplace</h1>
 
-      {/* --- OVLÁDACÍ PANEL --- */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
         
-        {/* Vyhledávání */}
         <input
           type="text"
           placeholder="Hledat meme..."
@@ -70,7 +66,6 @@ export const Memes = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* Kategorie Tlačítka (To, co jsi řešil) */}
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto scrollbar-hide">
           <button
             onClick={() => setCategory('All')}
@@ -97,7 +92,6 @@ export const Memes = () => {
           ))}
         </div>
 
-        {/* Řazení */}
         <select 
           className="border p-2 rounded-md w-full md:w-auto focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
           value={sort}
@@ -109,16 +103,13 @@ export const Memes = () => {
         </select>
       </div>
 
-      {/* --- GRID S MEMY --- */}
       {loading ? (
-        // Loading Skeleton
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="bg-gray-200 h-80 rounded-xl animate-pulse"></div>
           ))}
         </div>
       ) : (
-        // Seznam Memů
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {processedMemes.map(meme => (
             <div key={meme.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full">

@@ -1,24 +1,31 @@
 import { useFetch } from '../hooks/useFetch';
 import { useCart } from '../context/CartContext';
-import { enrichMeme, CATEGORIES } from '../utils/memeUtils';
+import { enrichMeme, CATEGORIES, Meme } from '../utils/memeUtils';
 import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 
-const StatCard = ({ title, value, color }) => (
+const StatCard = ({ title, value, color }: { title: string, value: string | number, color: string }) => (
   <div className={`p-6 rounded-xl shadow-md text-white ${color}`}>
     <h3 className="text-lg font-semibold opacity-80">{title}</h3>
     <p className="text-4xl font-bold mt-2">{value}</p>
   </div>
 );
 
+interface ApiResponse {
+  success: boolean;
+  data: {
+    memes: Meme[];
+  };
+}
+
 export const Dashboard = () => {
-  const { data, loading } = useFetch('https://api.imgflip.com/get_memes');
+  const { data, loading } = useFetch<ApiResponse>('https://api.imgflip.com/get_memes');
   const { getCartCount } = useCart();
 
   const stats = useMemo(() => {
     if (!data) return null;
     const allMemes = data.data.memes.map(enrichMeme);
-    const topMeme = [...allMemes].sort((a, b) => b.rating - a.rating)[0];
+    const topMeme = [...allMemes].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
     
     return {
       count: allMemes.length,

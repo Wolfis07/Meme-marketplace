@@ -23,7 +23,7 @@ export const Cart = () => {
               <span className="font-bold w-6 text-center">{item.quantity}</span>
               <button onClick={() => addItem(item)} className="p-1 bg-gray-100 rounded"><Plus size={16}/></button>
             </div>
-            <div className="font-bold w-20 text-right">{item.price * item.quantity} Kč</div>
+            <div className="font-bold w-20 text-right">{(item.price || 0) * (item.quantity || 1)} Kč</div>
             <button onClick={() => removeItem(item.id)} className="text-red-500"><Trash2 size={20}/></button>
           </div>
         ))}

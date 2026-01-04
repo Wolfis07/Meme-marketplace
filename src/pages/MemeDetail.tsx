@@ -1,15 +1,22 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
 import { useCart } from '../context/CartContext';
-import { enrichMeme } from '../utils/memeUtils';
+import { enrichMeme, Meme } from '../utils/memeUtils';
 import { ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
 
+interface ApiResponse {
+  success: boolean;
+  data: {
+    memes: Meme[];
+  };
+}
+
 export const MemeDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { data, loading, error } = useFetch('https://api.imgflip.com/get_memes');
+  const { data, loading, error } = useFetch<ApiResponse>('https://api.imgflip.com/get_memes');
 
   const { meme, related } = useMemo(() => {
     if (!data) return { meme: null, related: [] };
